@@ -30,15 +30,10 @@ ALL_EXTENSIONS = EXTENSIONS["TEXT"] \
                  + EXTENSIONS["AUDIO"] \
                  + EXTENSIONS["DATA"]
 
-def get_filename(filename):
-    return os.path.splitext(filename)[0]
+def get_file_name(filename):
+    return os.path.basename(filename)
 
 def get_file_extension(filename):
-    """
-    Return the file extension without the dot
-    :param filename:
-    :return:
-    """
     return os.path.splitext(filename)[1][1:].lower()
 
 def get_file_extension_type(filename):
@@ -166,32 +161,52 @@ class Storage(object):
                          meta_data=meta_data,
                          container=self.container,
                          driver=self.driver)
-        return StorageObject(obj, cloudstorage=self)
+        return StorageObject(obj=obj, cloudstorage=self)
 
-    def upload(self, file, object_name,
+    def upload(self,
+               file,
+               object_name=None,
                acl="private",
                meta_data={},
                allowed_extensions=None,
                overwrite=False):
-
+        """
+        To upload file
+        :param file:
+        :param object_name:
+        :param acl:
+        :param meta_data:
+        :param allowed_extensions:
+        :param overwrite:
+        :return: StorageObject
+        """
         extra = {
             "meta_data": meta_data,
             "acl": acl
         }
-        object_name = object_name.strip("/").strip()
-
-        if isinstance(self.driver, LocalStorageDriver):
-            object_name = secure_filename(object_name)
 
         if isinstance(file, FileStorage):
             extension = get_file_extension(file.filename)
         else:
             extension = get_file_extension(file)
 
+        if not object_name:
+            if isinstance(file, FileStorage):
+                object_name = get_file_name(file.filename)
+            else:
+                object_name = get_file_name(file)
+        object_name = object_name.strip("/").strip()
+
         if not allowed_extensions:
             allowed_extensions = self.allowed_extensions
         if extension.lower() not in allowed_extensions:
             raise InvalidExtensionError("Invalid file extension")
+
+        if isinstance(self.driver, LocalStorageDriver):
+            object_name = secure_filename(object_name)
+
+        if get_file_extension(object_name).strip() == "":
+            object_name += "." + extension
 
         if not overwrite:
             object_name = self._safe_object_name(object_name)
@@ -226,11 +241,12 @@ class Storage(object):
         str
             A safe filenaem to use when writting the file
         """
-        filename = get_filename(object_name)
         extension = get_file_extension(object_name)
+        filename = get_file_name(object_name)
+        file_name = filename.strip("." + extension)
         while self.object_exists(object_name):
             uuid = shortuuid.uuid()
-            object_name = "%s_%s.%s" % (filename, uuid, extension)
+            object_name = "%s__%s.%s" % (file_name, uuid, extension)
         return object_name
 
 class StorageObject(object):

@@ -1,3 +1,6 @@
 
+0.2.0
+    - Add extension of original file on upload if object_name doesn't have an extension
+    - Use the original file name as object name, if object name is None
 0.1.0
     - First

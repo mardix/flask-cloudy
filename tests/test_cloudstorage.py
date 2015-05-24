@@ -6,6 +6,7 @@ from libcloud.storage.base import (StorageDriver,
 from tests import config
 from flask_cloudstorage import (get_file_extension,
                                 get_file_extension_type,
+                                get_file_name,
                                 Storage,
                                 StorageObject,
                                 InvalidExtensionError)
@@ -35,6 +36,11 @@ def test_get_file_extension():
 def test_get_file_extension_type():
     filename = "hello.mp3"
     assert get_file_extension_type(filename) == "AUDIO"
+
+def test_get_file_name():
+    filename = "/dir1/dir2/dir3/hello.jpg"
+    assert get_file_name(filename) == "hello.jpg"
+
 
 #---
 
@@ -113,3 +119,15 @@ def test_storage_upload():
     o = storage.upload(CWD + "/data/hello.txt", object_name)
     assert isinstance(o, StorageObject)
     assert o.name != object_name
+
+def test_storage_upload_use_filename_name():
+    storage = app_storage()
+    object_name = "hello.js"
+    o = storage.upload(CWD + "/data/hello.js", overwrite=True, allowed_extensions=["js"])
+    assert o.name == object_name
+
+def test_storage_upload_append_extension():
+    storage = app_storage()
+    object_name = "my-txt-hello-hello"
+    o = storage.upload(CWD + "/data/hello.txt", object_name, overwrite=True)
+    assert get_file_extension(o.name) == "txt"
