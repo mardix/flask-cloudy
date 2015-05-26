@@ -1,4 +1,7 @@
 
+0.3.1
+    - Added the config 'CLOUDSTORAGE_SERVE_FILES_URL_SECURE' in flask to serve
+      files over https
 0.3.0
     - Serve local files through Python
     - When flask FileStorage type is being uploaded, use the stream method

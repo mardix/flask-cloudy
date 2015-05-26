@@ -156,7 +156,7 @@ class Storage(object):
         container = app.config.get("CLOUDSTORAGE_CONTAINER", None)
         local_path = app.config.get("CLOUDSTORAGE_LOCAL_PATH", None)
         allowed_extensions = app.config.get("CLOUDSTORAGE_ALLOWED_EXTENSIONS", None)
-        secure_url = app.config.get("CLOUDSTORAGE_SECURE_URL", False)
+        secure_url = app.config.get("CLOUDSTORAGE_SERVE_FILES_URL_SECURE", False)
         serve_files = app.config.get("CLOUDSTORAGE_SERVE_FILES", False)
         serve_files_url = app.config.get("CLOUDSTORAGE_SERVE_FILES_URL", "files")
 
