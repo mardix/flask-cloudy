@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 
 __NAME__ = "flask-CloudStorage"
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __author__ = "Mardix"
 __license__ = "MIT"
 __copyright__ = "2015"
