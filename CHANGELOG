@@ -1,4 +1,8 @@
 
+0.3.0
+    - Serve local files through Python
+    - When flask FileStorage type is being uploaded, use the stream method
+    - Object:get_url() will now return the appropriate url
 0.2.0
     - Add extension of original file on upload if object_name doesn't have an extension
     - Use the original file name as object name, if object name is None
