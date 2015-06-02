@@ -10,7 +10,7 @@ from importlib import import_module
 from flask import send_file, abort, url_for
 import shortuuid
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
-from libcloud.storage.providers import get_driver
+from libcloud.storage.providers import DRIVERS, get_driver
 from libcloud.storage.base import Object as BaseObject, StorageDriver
 from libcloud.storage.drivers import local
 from six.moves.urllib.parse import urlparse, urlunparse, urljoin
@@ -84,6 +84,19 @@ def get_driver_class(provider):
         driver = getattr(Provider, provider.upper())
     return get_driver(driver)
 
+def get_provider_name(driver):
+    """
+    Return the provider name from the driver class
+    :param driver: obj
+    :return: str
+    """
+    kls = driver.__class__.__name__
+    for d, prop in DRIVERS.items():
+        if prop[1] == kls:
+            return d
+    return None
+
+
 class InvalidExtensionError(Exception): pass
 
 
@@ -143,6 +156,8 @@ class Storage(object):
 
             if container:
                 self.container = container
+
+        self.local_path = local_path
 
     def init_app(self, app):
         """
@@ -204,7 +219,9 @@ class Storage(object):
         :return: generator
         """
         for obj in self.container.iterate_objects():
-            yield Object(obj=obj, secure_url=self.secure_url)
+            yield Object(obj=obj,
+                         secure_url=self.secure_url,
+                         local_path=self.local_path)
 
     def get_object(self, object_name, secure_url=None, validate=True, **kwargs):
         """
@@ -228,7 +245,9 @@ class Storage(object):
                 "meta_data": kwargs.get("meta_data", None)
             }
             obj = BaseObject(container=self.container, driver=self.driver, **params)
-        return Object(obj=obj, secure_url=secure_url or self.secure_url)
+        return Object(obj=obj,
+                      secure_url=secure_url or self.secure_url,
+                      local_path=self.local_path)
 
     def upload(self,
                file,
@@ -287,7 +306,9 @@ class Storage(object):
             obj = self.container.upload_object(file_path=file,
                                                object_name=name,
                                                extra=extra)
-        return Object(obj=obj, secure_url=self.secure_url)
+        return Object(obj=obj,
+                      secure_url=self.secure_url,
+                      local_path=self.local_path)
 
     def object_exists(self, name):
         """
@@ -350,6 +371,7 @@ class Object(object):
         hash
         extra
         meta_data
+
         driver
         container
 
@@ -431,5 +453,35 @@ class Object(object):
         """
         return get_file_extension_type(self.name)
 
+    @property
+    def provider_name(self):
+        """
+        Return the provider name
+        :return: str
+        """
+        return get_provider_name(self.driver)
 
+    @property
+    def container_name(self):
+        """
+        Return the container name
+        :return: str
+        """
+        return self.container.name
+
+    @property
+    def local_path(self):
+        """
+        Return the local path for Local storage
+        :return:
+        """
+        return self._kwargs.get("local_path", None)
+
+    @property
+    def object_path(self):
+        """
+        Return the object path
+        :return: str
+        """
+        return '%s/%s' % (self.container.name, self.name)
 

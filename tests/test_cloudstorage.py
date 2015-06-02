@@ -8,6 +8,7 @@ from flask_cloudstorage import (get_file_extension,
                                 get_file_extension_type,
                                 get_file_name,
                                 get_driver_class,
+                                get_provider_name,
                                 Storage,
                                 Object,
                                 InvalidExtensionError)
@@ -41,6 +42,12 @@ def test_get_file_extension_type():
 def test_get_file_name():
     filename = "/dir1/dir2/dir3/hello.jpg"
     assert get_file_name(filename) == "hello.jpg"
+
+def test_get_provider_name():
+    class GoogleStorageDriver(object):
+        pass
+    driver = GoogleStorageDriver()
+    assert get_provider_name(driver) == "google_storage"
 
 
 #---
@@ -98,6 +105,32 @@ def test_object_not_exists():
     object_name = "hello.png"
     storage = app_storage()
     assert storage.object_exists(object_name) is False
+
+def test_object_provider_name():
+    object_name = "hello.jpg"
+    storage = app_storage()
+    o = storage.get_object(object_name, validate=False)
+    assert o.provider_name == config.PROVIDER.lower()
+
+def test_object_container_name():
+    object_name = "hello.jpg"
+    storage = app_storage()
+    o = storage.get_object(object_name, validate=False)
+    assert o.container_name == config.CONTAINER
+
+def test_object_object_path():
+    object_name = "hello.jpg"
+    storage = app_storage()
+    o = storage.get_object(object_name, validate=False)
+    p = "%s/%s" % (o.container.name, o.name)
+    assert o.object_path == p
+
+def test_object_local_path():
+    object_name = "hello.jpg"
+    storage = app_storage()
+    o = storage.get_object(object_name, validate=False)
+    if "local" in o.container.name.lower():
+        assert o.local_path == CWD
 
 def test_storage_upload_invalid():
     storage = app_storage()
