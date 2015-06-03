@@ -1,3 +1,6 @@
+0.5.1
+    - Fixed typo
+
 0.5.0
     - object_path return the full path of the object when on local
     - get_url() can return short url for local file instead of the full domain one

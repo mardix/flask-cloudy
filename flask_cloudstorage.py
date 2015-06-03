@@ -364,7 +364,7 @@ class Storage(object):
                 @app.route(url, endpoint=FILE_SERVER_ENDPOINT)
                 def files_server(object_name):
                     if self.object_exists(object_name):
-                        obj = self.get_object(object_name)
+                        obj = self.object(object_name)
                         _url = obj.get_cdn_url()
                         return send_file(_url, conditional=True)
                     else:
