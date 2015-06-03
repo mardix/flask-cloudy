@@ -1,3 +1,7 @@
+0.5.0
+    - object_path return the full path of the object when on local
+    - get_url() can return short url for local file instead of the full domain one
+    - rename Storage:get_object to Storage:object
 
 0.4.0
     - Added: provider_name, container_name, and local_path, object_path to object

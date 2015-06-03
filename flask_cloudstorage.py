@@ -98,7 +98,7 @@ def get_provider_name(driver):
 
 
 class InvalidExtensionError(Exception): pass
-
+class LocalPathUndefinedError(Exception): pass
 
 class Storage(object):
     _container_name = None
@@ -180,7 +180,7 @@ class Storage(object):
 
         if provider and provider.upper() == "LOCAL":
             if not local_path:
-                raise ValueError("For 'LOCAL' provider, Storage requires CLOUDSTORAGE_LOCAL_PATH")
+                raise LocalPathUndefinedError("For 'LOCAL' provider, Storage requires CLOUDSTORAGE_LOCAL_PATH")
             else:
                 key = local_path
                 secret = None
@@ -223,15 +223,26 @@ class Storage(object):
                          secure_url=self.secure_url,
                          local_path=self.local_path)
 
-    def get_object(self, object_name, secure_url=None, validate=True, **kwargs):
+    def __len__(self):
+        """
+        Return the total objects in the container
+        :return: int
+        """
+        return len(self.container.list_objects())
+
+    def object(self, object_name, secure_url=None, validate=True, **kwargs):
         """
         Get the object
         :param object_name:
         :param secure_url: To secure url, when get_url
         :param validate: When False, it will build the object without validating it.
                         the object file may not exist in the container
-        :param kwargs: When validate is False, these args will be pass
+        :param kwargs: When validate is False, these args will be used to build the object
                         to the object builder
+                        - size
+                        - hash
+                        - extra
+                        - meta_data
         :return: Object
         """
         if validate:
@@ -389,13 +400,15 @@ class Object(object):
     def __len__(self):
         return self.size
 
-    def get_url(self, secure_url=None):
+    def get_url(self, secure=None, short=True):
         """
         Return the url 
-        :param secure_url:
-        :return:
+        :param secure: bool - To use https
+        :param short: bool - On local, reference the local path without the domain
+                        ie: http://site.com/files/object.png -> /files/object.png
+        :return: str
         """
-        secure = secure_url or self._kwargs.get("secure_url", False)
+        secure = secure or self._kwargs.get("secure_url", False)
         driver_name = self.driver.name.lower()
         try:
             # Currently only Cloudfiles and Local supports it
@@ -403,7 +416,7 @@ class Object(object):
             if "local" in driver_name:
                 url = url_for(FILE_SERVER_ENDPOINT,
                               object_name=self.name,
-                              _external=True)
+                              _external=False if short else True)
         except NotImplementedError as e:
             object_path = '%s/%s' % (self.container.name, self.name)
             if 's3' in driver_name:
@@ -473,7 +486,7 @@ class Object(object):
     def local_path(self):
         """
         Return the local path for Local storage
-        :return:
+        :return: str
         """
         return self._kwargs.get("local_path", None)
 
@@ -483,5 +496,8 @@ class Object(object):
         Return the object path
         :return: str
         """
-        return '%s/%s' % (self.container.name, self.name)
+        path = "%s/%s" % (self.container.name, self.name)
+        if "local" in self.driver.name.lower():
+            path = "%s/%s" % (self.local_path, path)
+        return path
 

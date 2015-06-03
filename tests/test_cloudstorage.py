@@ -91,13 +91,13 @@ def test_storage_object_not_exists():
 def test_storage_object():
     object_name = "hello.txt"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     assert isinstance(o, Object)
 
 def test_object_type_extension():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     assert o.type == "IMAGE"
     assert o.extension == "jpg"
 
@@ -109,26 +109,26 @@ def test_object_not_exists():
 def test_object_provider_name():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     assert o.provider_name == config.PROVIDER.lower()
 
 def test_object_container_name():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     assert o.container_name == config.CONTAINER
 
 def test_object_object_path():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     p = "%s/%s" % (o.container.name, o.name)
-    assert o.object_path == p
+    assert o.object_path.endswith(p)
 
 def test_object_local_path():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.get_object(object_name, validate=False)
+    o = storage.object(object_name, validate=False)
     if "local" in o.container.name.lower():
         assert o.local_path == CWD
 

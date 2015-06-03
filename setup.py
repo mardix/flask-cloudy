@@ -19,8 +19,8 @@ Supported storage:
 from setuptools import setup, find_packages
 
 
-__NAME__ = "flask-CloudStorage"
-__version__ = "0.4.0"
+__NAME__ = "Flask-CloudStorage"
+__version__ = "0.5.0"
 __author__ = "Mardix"
 __license__ = "MIT"
 __copyright__ = "2015"
