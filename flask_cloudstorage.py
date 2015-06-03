@@ -96,9 +96,11 @@ def get_provider_name(driver):
             return d
     return None
 
+class InvalidExtensionError(Exception):
+    pass
 
-class InvalidExtensionError(Exception): pass
-class LocalPathUndefinedError(Exception): pass
+class LocalPathUndefinedError(Exception):
+    pass
 
 class Storage(object):
     _container_name = None
@@ -159,6 +161,57 @@ class Storage(object):
 
         self.local_path = local_path
 
+    def __iter__(self):
+        """
+        ie: `for item in storage`
+        Iterate over all the objects in the container
+        :return: generator
+        """
+        for obj in self.container.iterate_objects():
+            yield Object(obj=obj,
+                         secure_url=self.secure_url,
+                         local_path=self.local_path)
+
+    def __len__(self):
+        """
+        ie: `len(storage)`
+        Return the total objects in the container
+        :return: int
+        """
+        return len(self.container.list_objects())
+
+    def __contains__(self, object_name):
+        """
+        ie: `if name in storage` or `if name not in storage`
+        Test if object exists
+        :param object_name: the object name
+        :return bool:
+        """
+        try:
+            container_name = self.container.name
+            self.driver.get_object(container_name, object_name)
+            return True
+        except ObjectDoesNotExistError:
+            return False
+
+    @property
+    def driver(self):
+        return self._driver
+
+    @driver.setter
+    def driver(self, driver):
+        if not isinstance(driver, StorageDriver):
+            raise AttributeError("Invalid Driver")
+        self._driver = driver
+
+    @property
+    def container(self):
+        return self._container
+
+    @container.setter
+    def container(self, container_name):
+        self._container = self.driver.get_container(container_name)
+
     def init_app(self, app):
         """
         To initiate with Flask
@@ -195,67 +248,39 @@ class Storage(object):
 
         self._register_file_server(app)
 
-    @property
-    def driver(self):
-        return self._driver
-
-    @driver.setter
-    def driver(self, driver):
-        if not isinstance(driver, StorageDriver):
-            raise AttributeError("Invalid Driver")
-        self._driver = driver
-
-    @property
-    def container(self):
-        return self._container
-
-    @container.setter
-    def container(self, container_name):
-        self._container = self.driver.get_container(container_name)
-
-    def __iter__(self):
+    def get(self, object_name, secure_url=None):
         """
-        Iterate over all the objects in the container
-        :return: generator
-        """
-        for obj in self.container.iterate_objects():
-            yield Object(obj=obj,
-                         secure_url=self.secure_url,
-                         local_path=self.local_path)
+        Return an object or None if it doesn't exist
 
-    def __len__(self):
-        """
-        Return the total objects in the container
-        :return: int
-        """
-        return len(self.container.list_objects())
-
-    def object(self, object_name, secure_url=None, validate=True, **kwargs):
-        """
-        Get the object
         :param object_name:
         :param secure_url: To secure url, when get_url
-        :param validate: When False, it will build the object without validating it.
-                        the object file may not exist in the container
-        :param kwargs: When validate is False, these args will be used to build the object
-                        to the object builder
-                        - size
-                        - hash
-                        - extra
-                        - meta_data
         :return: Object
         """
-        if validate:
-            obj = self.container.get_object(object_name)
-        else:
-            params = {
-                "name": object_name,
-                "size": kwargs.get("size", 0),
-                "hash": kwargs.get("hash", None),
-                "extra": kwargs.get("extra", None),
-                "meta_data": kwargs.get("meta_data", None)
-            }
-            obj = BaseObject(container=self.container, driver=self.driver, **params)
+        if object_name in self:
+            return Object(obj=self.container.get_object(object_name),
+                          secure_url=secure_url or self.secure_url,
+                          local_path=self.local_path)
+        return None
+
+    def create(self, object_name, secure_url=None, size=0, hash=None, extra=None, meta_data=None):
+        """
+        create a new object
+
+        :param object_name:
+        :param secure_url: To secure url, when get_url
+        :param size:
+        :param hash:
+        :param extra:
+        :param meta_data:
+        :return: Object
+        """
+        obj = BaseObject(container=self.container,
+                         driver=self.driver,
+                         name=object_name,
+                         size=size,
+                         hash=hash,
+                         extra=extra,
+                         meta_data=meta_data)
         return Object(obj=obj,
                       secure_url=secure_url or self.secure_url,
                       local_path=self.local_path)
@@ -321,19 +346,6 @@ class Storage(object):
                       secure_url=self.secure_url,
                       local_path=self.local_path)
 
-    def object_exists(self, name):
-        """
-        Test if object exists
-        :param name: the object name
-        :return bool:
-        """
-        try:
-            container_name = self.container.name
-            self.driver.get_object(container_name, name)
-            return True
-        except ObjectDoesNotExistError:
-            return False
-
     def _safe_object_name(self, object_name):
         """ Add a UUID if to a object name if it exists. To prevent overwrites
         :param object_name:
@@ -341,7 +353,7 @@ class Storage(object):
         """
         extension = get_file_extension(object_name)
         file_name = os.path.splitext(object_name)[0]
-        while self.object_exists(object_name):
+        while object_name in self:
             uuid = shortuuid.uuid()
             object_name = "%s__%s.%s" % (file_name, uuid, extension)
         return object_name
@@ -363,8 +375,8 @@ class Storage(object):
 
                 @app.route(url, endpoint=FILE_SERVER_ENDPOINT)
                 def files_server(object_name):
-                    if self.object_exists(object_name):
-                        obj = self.object(object_name)
+                    obj = self.get(object_name)
+                    if obj:
                         _url = obj.get_cdn_url()
                         return send_file(_url, conditional=True)
                     else:

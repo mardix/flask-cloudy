@@ -1,3 +1,8 @@
+0.6.0
+    - More pythonic
+    - implement __contains__ to look for an item in the storage. `if object_name in storage`
+    - rename Storage:objet to Storage:get().
+
 0.5.1
     - Fixed typo
 

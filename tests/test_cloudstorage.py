@@ -86,49 +86,44 @@ def test_iter():
 def test_storage_object_not_exists():
     object_name = "hello.png"
     storage = app_storage()
-    assert storage.object_exists(object_name) is False
+    assert object_name not in storage
 
 def test_storage_object():
     object_name = "hello.txt"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     assert isinstance(o, Object)
 
 def test_object_type_extension():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     assert o.type == "IMAGE"
     assert o.extension == "jpg"
-
-def test_object_not_exists():
-    object_name = "hello.png"
-    storage = app_storage()
-    assert storage.object_exists(object_name) is False
 
 def test_object_provider_name():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     assert o.provider_name == config.PROVIDER.lower()
 
 def test_object_container_name():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     assert o.container_name == config.CONTAINER
 
 def test_object_object_path():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     p = "%s/%s" % (o.container.name, o.name)
     assert o.object_path.endswith(p)
 
 def test_object_local_path():
     object_name = "hello.jpg"
     storage = app_storage()
-    o = storage.object(object_name, validate=False)
+    o = storage.create(object_name)
     if "local" in o.container.name.lower():
         assert o.local_path == CWD
 
@@ -144,6 +139,18 @@ def test_storage_upload_ovewrite():
     o = storage.upload(CWD + "/data/hello.txt", name=object_name, overwrite=True)
     assert isinstance(o, Object)
     assert o.name == object_name
+
+def test_storage_get():
+    storage = app_storage()
+    object_name = "my-txt-helloIII.txt"
+    o = storage.upload(CWD + "/data/hello.txt", name=object_name, overwrite=True)
+    o2 = storage.get(o.name)
+    assert isinstance(o2, Object)
+
+def test_storage_get_none():
+    storage = app_storage()
+    o2 = storage.get("idonexist")
+    assert o2 is None
 
 def test_storage_upload():
     storage = app_storage()
@@ -171,5 +178,5 @@ def test_storage_upload_with_prefix():
     prefix = "dir1/dir2/dir3"
     full_name = "%s/%s.%s" % (prefix, object_name, "txt")
     o = storage.upload(CWD + "/data/hello.txt", name=object_name, prefix=prefix, overwrite=True)
-    assert storage.object_exists(full_name) is True
+    assert full_name in storage
     assert o.name == full_name
