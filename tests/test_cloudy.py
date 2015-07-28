@@ -1,10 +1,7 @@
 import os
-
 import pytest
-from libcloud.storage.base import (StorageDriver,
-                                   Container)
-from tests import config
-from flask_cloudstorage import (get_file_extension,
+from libcloud.storage.base import (StorageDriver, Container)
+from flask_cloudy import (get_file_extension,
                                 get_file_extension_type,
                                 get_file_name,
                                 get_driver_class,
@@ -12,18 +9,20 @@ from flask_cloudstorage import (get_file_extension,
                                 Storage,
                                 Object,
                                 InvalidExtensionError)
+from tests import config
 
 CWD = os.path.dirname(__file__)
 
-# Manipulate
+CONTAINER = "%s/%s" % (CWD, config.CONTAINER) if config.PROVIDER == "LOCAL" else config.CONTAINER
+
 class App(object):
-    config = config=dict(
-        CLOUDSTORAGE_PROVIDER=config.PROVIDER,
-        CLOUDSTORAGE_KEY=config.KEY,
-        CLOUDSTORAGE_SECRET=config.SECRET,
-        CLOUDSTORAGE_CONTAINER=config.CONTAINER,
-        CLOUDSTORAGE_LOCAL_PATH=CWD,
-        CLOUDSTORAGE_ALLOWED_EXTENSIONS=[])
+    config = dict(
+        STORAGE_PROVIDER=config.PROVIDER,
+        STORAGE_KEY=config.KEY,
+        STORAGE_SECRET=config.SECRET,
+        STORAGE_CONTAINER=CONTAINER,
+        STORAGE_ALLOWED_EXTENSIONS=[])
+
 
 def _setup_function():
     pass
@@ -49,13 +48,12 @@ def test_get_provider_name():
     driver = GoogleStorageDriver()
     assert get_provider_name(driver) == "google_storage"
 
-
 #---
 
 app = App()
 
 def app_storage():
-    return Storage(app=app)
+    return Storage(app=App())
 
 def test_get_driver_class():
     driver = get_driver_class("S3")
@@ -68,11 +66,6 @@ def test_driver():
 def test_container():
     storage = app_storage()
     assert isinstance(storage.container, Container)
-
-def test_set_container():
-    storage = app_storage()
-    storage.container = config.CONTAINER_2
-    assert storage.container.name == config.CONTAINER_2
 
 def test_flask_app():
     storage = app_storage()
@@ -107,25 +100,12 @@ def test_object_provider_name():
     o = storage.create(object_name)
     assert o.provider_name == config.PROVIDER.lower()
 
-def test_object_container_name():
-    object_name = "hello.jpg"
-    storage = app_storage()
-    o = storage.create(object_name)
-    assert o.container_name == config.CONTAINER
-
 def test_object_object_path():
     object_name = "hello.jpg"
     storage = app_storage()
     o = storage.create(object_name)
     p = "%s/%s" % (o.container.name, o.name)
-    assert o.object_path.endswith(p)
-
-def test_object_local_path():
-    object_name = "hello.jpg"
-    storage = app_storage()
-    o = storage.create(object_name)
-    if "local" in o.container.name.lower():
-        assert o.local_path == CWD
+    assert o.path.endswith(p)
 
 def test_storage_upload_invalid():
     storage = app_storage()
@@ -180,3 +160,13 @@ def test_storage_upload_with_prefix():
     o = storage.upload(CWD + "/data/hello.txt", name=object_name, prefix=prefix, overwrite=True)
     assert full_name in storage
     assert o.name == full_name
+
+
+def test_save_to():
+    storage = app_storage()
+    object_name = "my-txt-hello-to-save.txt"
+    o = storage.upload(CWD + "/data/hello.txt", name=object_name)
+    file = o.save_to("./data", overwrite=True)
+    file2 = o.save_to(CWD + "/data", name="my_new_file", overwrite=True)
+    assert os.path.isfile(file)
+    assert file2 == CWD + "/data/my_new_file.txt"

@@ -1,5 +1,5 @@
 """
-Flask-CloudStorage
+Flask-Cloudy
 
 A wrapper around Apache-Libcloud to upload and save files on cloud storage
 providers such as: AWS S3, Google Storage, Microsoft Azure, Rackspace Cloudfiles,
@@ -18,9 +18,8 @@ Supported storage:
 
 from setuptools import setup, find_packages
 
-
-__NAME__ = "Flask-CloudStorage"
-__version__ = "0.6.0"
+__NAME__ = "Flask-Cloudy"
+__version__ = "0.7.0"
 __author__ = "Mardix"
 __license__ = "MIT"
 __copyright__ = "2015"
@@ -31,11 +30,11 @@ setup(
     license=__license__,
     author=__author__,
     author_email='mardix@github.com',
-    description="Flask-CloudStorage is a simple flask extension and standalone library to upload and save files on the cloud",
+    description="Flask-Cloudy is a simple flask extension and standalone library to upload and save files on S3, Google storage or other Cloud Storages",
     long_description=__doc__,
-    url='https://github.com/mardix/flask-cloudstorage/',
-    download_url='http://github.com/mardix/flask-cloudstorage/tarball/master',
-    py_modules=['flask_cloudstorage'],
+    url='https://github.com/mardix/flask-cloudy/',
+    download_url='http://github.com/mardix/flask-cloudy/tarball/master',
+    py_modules=['flask_cloudy'],
     include_package_data=True,
     packages=find_packages(),
     install_requires=[
@@ -47,7 +46,7 @@ setup(
         'python-slugify==0.1.0'
     ],
 
-    keywords=["flask", "s3", "aws", "cloudfiles", "storage", "azure", "google"],
+    keywords=["flask", "s3", "aws", "cloudfiles", "storage", "azure", "google", "cloudy"],
     platforms='any',
     classifiers=[
         'Environment :: Web Environment',

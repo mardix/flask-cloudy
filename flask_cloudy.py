@@ -1,5 +1,5 @@
 """
-Flask-CloudStorage
+Flask-Cloudy
 """
 
 import os
@@ -7,7 +7,7 @@ import warnings
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from importlib import import_module
-from flask import send_file, abort, url_for
+from flask import send_file, abort, url_for, request
 import shortuuid
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import DRIVERS, get_driver
@@ -16,12 +16,12 @@ from libcloud.storage.drivers import local
 from six.moves.urllib.parse import urlparse, urlunparse, urljoin
 import slugify
 
-FILE_SERVER_ENDPOINT = "FLASK_CLOUDSTORAGE:FILE_SERVER"
+SERVER_ENDPOINT = "FLASK_CLOUDY_SERVER"
 
 EXTENSIONS = {
-    "TEXT": ["txt"],
+    "TEXT": ["txt", "md"],
     "DOCUMENT": ["rtf", "odf", "ods", "gnumeric", "abw", "doc", "docx", "xls", "xlsx"],
-    "IMAGE": ["jpg", "jpeg", "jpe", "png", "gif", "svg", "bmp"],
+    "IMAGE": ["jpg", "jpeg", "jpe", "png", "gif", "svg", "bmp", "webp"],
     "AUDIO": ["wav", "mp3", "aac", "ogg", "oga", "flac"],
     "DATA": ["csv", "ini", "json", "plist", "xml", "yaml", "yml"],
     "SCRIPT": ["js", "php", "pl", "py", "rb", "sh"],
@@ -34,6 +34,9 @@ ALL_EXTENSIONS = EXTENSIONS["TEXT"] \
                  + EXTENSIONS["AUDIO"] \
                  + EXTENSIONS["DATA"] \
                  + EXTENSIONS["ARCHIVE"]
+
+class InvalidExtensionError(Exception):
+    pass
 
 def get_file_name(filename):
     """
@@ -96,16 +99,10 @@ def get_provider_name(driver):
             return d
     return None
 
-class InvalidExtensionError(Exception):
-    pass
-
-class LocalPathUndefinedError(Exception):
-    pass
 
 class Storage(object):
-    _container_name = None
-    _container = None
-    _driver = None
+    container = None
+    driver = None
     config = {}
     allowed_extensions = EXTENSIONS["TEXT"] \
                          + EXTENSIONS["DOCUMENT"] \
@@ -113,14 +110,13 @@ class Storage(object):
                          + EXTENSIONS["AUDIO"] \
                          + EXTENSIONS["DATA"]
 
-    def __init__(self, provider=None,
+    def __init__(self,
+                 provider=None,
                  key=None,
                  secret=None,
                  container=None,
-                 local_path=None,
                  allowed_extensions=None,
                  app=None,
-                 secure_url=False,
                  **kwargs):
 
         """
@@ -129,14 +125,11 @@ class Storage(object):
         :param key: str - provider key
         :param secret: str - provider secret
         :param container: str - the name of the container (bucket or a dir name if local)
-        :param local_path: str - when provider == LOCAL, it is the base directory
         :param allowed_extensions: list - extensions allowed for upload
         :param app: Flask object -
-        :param secure_url: bool - when getting the url, it will add https if true
         :param kwargs: any other params will pass to the provider initialization
         :return:
         """
-        self.secure_url = secure_url
 
         if app:
             self.init_app(app)
@@ -145,21 +138,22 @@ class Storage(object):
             self.allowed_extensions = allowed_extensions
 
         if provider:
-            if not key and local_path:
-                key = local_path
-
             kwparams = {
                 "key": key,
                 "secret": secret
             }
 
+            if "local" in provider.lower():
+                kwparams["key"] = container
+                container = ""
+
             kwparams.update(kwargs)
+
             self.driver = get_driver_class(provider)(**kwparams)
+            if not isinstance(self.driver, StorageDriver):
+                raise AttributeError("Invalid Driver")
 
-            if container:
-                self.container = container
-
-        self.local_path = local_path
+            self.container = self.driver.get_container(container)
 
     def __iter__(self):
         """
@@ -168,9 +162,7 @@ class Storage(object):
         :return: generator
         """
         for obj in self.container.iterate_objects():
-            yield Object(obj=obj,
-                         secure_url=self.secure_url,
-                         local_path=self.local_path)
+            yield Object(obj=obj)
 
     def __len__(self):
         """
@@ -188,29 +180,10 @@ class Storage(object):
         :return bool:
         """
         try:
-            container_name = self.container.name
-            self.driver.get_object(container_name, object_name)
+            self.driver.get_object(self.container.name, object_name)
             return True
         except ObjectDoesNotExistError:
             return False
-
-    @property
-    def driver(self):
-        return self._driver
-
-    @driver.setter
-    def driver(self, driver):
-        if not isinstance(driver, StorageDriver):
-            raise AttributeError("Invalid Driver")
-        self._driver = driver
-
-    @property
-    def container(self):
-        return self._container
-
-    @container.setter
-    def container(self, container_name):
-        self._container = self.driver.get_container(container_name)
 
     def init_app(self, app):
         """
@@ -218,56 +191,48 @@ class Storage(object):
         :param app: Flask object
         :return:
         """
-        provider = app.config.get("CLOUDSTORAGE_PROVIDER", None)
-        key = app.config.get("CLOUDSTORAGE_KEY", None)
-        secret = app.config.get("CLOUDSTORAGE_SECRET", None)
-        container = app.config.get("CLOUDSTORAGE_CONTAINER", None)
-        local_path = app.config.get("CLOUDSTORAGE_LOCAL_PATH", None)
-        allowed_extensions = app.config.get("CLOUDSTORAGE_ALLOWED_EXTENSIONS", None)
-        secure_url = app.config.get("CLOUDSTORAGE_SERVE_FILES_URL_SECURE", False)
-        serve_files = app.config.get("CLOUDSTORAGE_SERVE_FILES", False)
-        serve_files_url = app.config.get("CLOUDSTORAGE_SERVE_FILES_URL", "files")
+        provider = app.config.get("STORAGE_PROVIDER", None)
+        key = app.config.get("STORAGE_KEY", None)
+        secret = app.config.get("STORAGE_SECRET", None)
+        container = app.config.get("STORAGE_CONTAINER", None)
+        allowed_extensions = app.config.get("STORAGE_ALLOWED_EXTENSIONS", None)
+        serve_files = app.config.get("STORAGE_SERVER", False)
+        serve_files_url = app.config.get("STORAGE_SERVER_URL", "files")
 
         self.config["serve_files"] = serve_files
         self.config["serve_files_url"] = serve_files_url
 
-        if provider and provider.upper() == "LOCAL":
-            if not local_path:
-                raise LocalPathUndefinedError("For 'LOCAL' provider, Storage requires CLOUDSTORAGE_LOCAL_PATH")
-            else:
-                key = local_path
-                secret = None
+        if not provider:
+            raise ValueError("'STORAGE_PROVIDER' is missing")
+
+        if provider.upper() == "LOCAL":
+            if not os.path.isdir(container):
+                raise IOError("Local Container (directory) '%s' is not a "
+                              "directory or doesn't exist for LOCAL provider" % container)
 
         self.__init__(provider=provider,
                       key=key,
                       secret=secret,
                       container=container,
-                      local_path=local_path,
-                      allowed_extensions=allowed_extensions,
-                      secure_url=secure_url)
+                      allowed_extensions=allowed_extensions)
 
         self._register_file_server(app)
 
-    def get(self, object_name, secure_url=None):
+    def get(self, object_name):
         """
         Return an object or None if it doesn't exist
-
         :param object_name:
-        :param secure_url: To secure url, when get_url
         :return: Object
         """
         if object_name in self:
-            return Object(obj=self.container.get_object(object_name),
-                          secure_url=secure_url or self.secure_url,
-                          local_path=self.local_path)
+            return Object(obj=self.container.get_object(object_name))
         return None
 
-    def create(self, object_name, secure_url=None, size=0, hash=None, extra=None, meta_data=None):
+    def create(self, object_name, size=0, hash=None, extra=None, meta_data=None):
         """
         create a new object
 
         :param object_name:
-        :param secure_url: To secure url, when get_url
         :param size:
         :param hash:
         :param extra:
@@ -281,9 +246,7 @@ class Storage(object):
                          hash=hash,
                          extra=extra,
                          meta_data=meta_data)
-        return Object(obj=obj,
-                      secure_url=secure_url or self.secure_url,
-                      local_path=self.local_path)
+        return Object(obj=obj)
 
     def upload(self,
                file,
@@ -291,6 +254,7 @@ class Storage(object):
                prefix=None,
                allowed_extensions=None,
                overwrite=False,
+               public=False,
                **kwargs):
         """
         To upload file
@@ -299,9 +263,12 @@ class Storage(object):
         :param prefix: A prefix for the object. Can be in the form of directory tree
         :param allowed_extensions: list of extensions to allow
         :param overwrite: bool - To overwrite if file exists
+        :param public: bool - To set acl to private or public-read. Having acl in kwargs will override it
         :param kwargs: extra params: ie: acl, meta_data etc.
         :return: Object
         """
+        if "acl" not in kwargs:
+            kwargs["acl"] = "public-read" if public else "private"
         extra = kwargs
 
         # coming from an upload object
@@ -336,15 +303,13 @@ class Storage(object):
 
         if isinstance(file, FileStorage):
             obj = self.container.upload_object_via_stream(iterator=file,
-                                               object_name=name,
-                                               extra=extra)
+                                                          object_name=name,
+                                                          extra=extra)
         else:
             obj = self.container.upload_object(file_path=file,
                                                object_name=name,
                                                extra=extra)
-        return Object(obj=obj,
-                      secure_url=self.secure_url,
-                      local_path=self.local_path)
+        return Object(obj=obj)
 
     def _safe_object_name(self, object_name):
         """ Add a UUID if to a object name if it exists. To prevent overwrites
@@ -373,16 +338,21 @@ class Storage(object):
             if server_url:
                 url = "/%s/<path:object_name>" % server_url
 
-                @app.route(url, endpoint=FILE_SERVER_ENDPOINT)
+                @app.route(url, endpoint=SERVER_ENDPOINT)
                 def files_server(object_name):
                     obj = self.get(object_name)
                     if obj:
+                        dl = request.args.get("dl")
+                        name = request.args.get("name")
                         _url = obj.get_cdn_url()
-                        return send_file(_url, conditional=True)
+                        return send_file(_url,
+                                         as_attachment=True if dl else False,
+                                         attachment_filename=name or False,
+                                         conditional=True)
                     else:
                         abort(404)
             else:
-                warnings.warn("Flask-CloudStorage can't serve files. 'CLOUDSTORAGE_SERVER_FILES_URL' is not set")
+                warnings.warn("Flask-Cloudy can't serve files. 'STORAGE_SERVER_FILES_URL' is not set")
 
 class Object(object):
     """
@@ -402,6 +372,9 @@ class Object(object):
         download()
         delete()
     """
+
+    _obj = None
+
     def __init__(self, obj, **kwargs):
         self._obj = obj
         self._kwargs = kwargs
@@ -412,23 +385,22 @@ class Object(object):
     def __len__(self):
         return self.size
 
-    def get_url(self, secure=None, short=True):
+    def get_url(self, secure=False, longurl=False):
         """
         Return the url 
         :param secure: bool - To use https
-        :param short: bool - On local, reference the local path without the domain
-                        ie: http://site.com/files/object.png -> /files/object.png
+        :param longurl: bool - On local, reference the local path with the domain
+                        ie: http://site.com/files/object.png otherwise /files/object.png
         :return: str
         """
-        secure = secure or self._kwargs.get("secure_url", False)
         driver_name = self.driver.name.lower()
         try:
             # Currently only Cloudfiles and Local supports it
             url = self._obj.get_cdn_url()
             if "local" in driver_name:
-                url = url_for(FILE_SERVER_ENDPOINT,
+                url = url_for(SERVER_ENDPOINT,
                               object_name=self.name,
-                              _external=False if short else True)
+                              _external=longurl)
         except NotImplementedError as e:
             object_path = '%s/%s' % (self.container.name, self.name)
             if 's3' in driver_name:
@@ -463,6 +435,32 @@ class Object(object):
         return url
 
     @property
+    def url(self):
+        """
+        Returns the url of the object.
+        For local it will return it with the domain name
+        :return:
+        """
+        return self.get_url(longurl=True)
+
+    @property
+    def short_url(self):
+        """
+        Returns the url of the object
+        For local it will return it WITHOUT the domain name
+        :return:
+        """
+        return self.get_url()
+
+    @property
+    def secure_url(self):
+        """
+        Return a url with https
+        :return:
+        """
+        return self.get_url(secure=True, longurl=True)
+
+    @property
     def extension(self):
         """
         Return the extension of the object
@@ -487,29 +485,45 @@ class Object(object):
         return get_provider_name(self.driver)
 
     @property
-    def container_name(self):
-        """
-        Return the container name
-        :return: str
-        """
-        return self.container.name
-
-    @property
-    def local_path(self):
-        """
-        Return the local path for Local storage
-        :return: str
-        """
-        return self._kwargs.get("local_path", None)
-
-    @property
-    def object_path(self):
+    def path(self):
         """
         Return the object path
         :return: str
         """
-        path = "%s/%s" % (self.container.name, self.name)
-        if "local" in self.driver.name.lower():
-            path = "%s/%s" % (self.local_path, path)
-        return path
+        return "%s/%s" % (self.container.name, self.name)
 
+    def download(self, name=None, signed=True):
+        """
+        Trigger a browse download
+        :return:
+        """
+        if "local" in self.driver.name.lower():
+            return url_for(SERVER_ENDPOINT,
+                           object_name=self.path,
+                           dl=1,
+                           name=name)
+        else:
+            if signed:
+                pass
+            pass
+
+    def save_to(self, destination, name=None, overwrite=False, delete_on_failure=True):
+        """
+        To save the object in a local path
+        :param destination: str - The directory to save the object to
+        :param name: str - To rename the file name. Do not add extesion
+        :param overwrite:
+        :param delete_on_failure:
+        :return: The new location of the file or None
+        """
+        if not os.path.isdir(destination):
+            raise IOError("'%s' is not a valid directory")
+
+        obj_path = "%s/%s" % (destination, self._obj.name)
+        if name:
+            obj_path = "%s/%s.%s" % (destination, name, self.extension)
+
+        file = self._obj.download(obj_path,
+                                  overwrite_existing=overwrite,
+                                  delete_on_failure=delete_on_failure)
+        return obj_path if file else None
