@@ -3,6 +3,10 @@ Flask-Cloudy
 """
 
 import os
+import datetime
+import base64
+import hmac
+import hashlib
 import warnings
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
@@ -13,8 +17,10 @@ from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import DRIVERS, get_driver
 from libcloud.storage.base import Object as BaseObject, StorageDriver
 from libcloud.storage.drivers import local
-from six.moves.urllib.parse import urlparse, urlunparse, urljoin
+from six.moves.urllib.parse import urlparse, urlunparse, urljoin, urlencode
 import slugify
+
+
 
 SERVER_ENDPOINT = "FLASK_CLOUDY_SERVER"
 
@@ -126,7 +132,7 @@ class Storage(object):
         :param secret: str - provider secret
         :param container: str - the name of the container (bucket or a dir name if local)
         :param allowed_extensions: list - extensions allowed for upload
-        :param app: Flask object -
+        :param app: object - Flask instance
         :param kwargs: any other params will pass to the provider initialization
         :return:
         """
@@ -134,10 +140,10 @@ class Storage(object):
         if app:
             self.init_app(app)
 
-        if allowed_extensions:
-            self.allowed_extensions = allowed_extensions
-
         if provider:
+            if allowed_extensions:
+                self.allowed_extensions = allowed_extensions
+
             kwparams = {
                 "key": key,
                 "secret": secret
@@ -343,11 +349,15 @@ class Storage(object):
                     obj = self.get(object_name)
                     if obj:
                         dl = request.args.get("dl")
-                        name = request.args.get("name")
+                        name = request.args.get("name", obj.name)
+
+                        if get_file_extension(name) != obj.extension:
+                            name += ".%s" % obj.extension
+
                         _url = obj.get_cdn_url()
                         return send_file(_url,
                                          as_attachment=True if dl else False,
-                                         attachment_filename=name or False,
+                                         attachment_filename=name,
                                          conditional=True)
                     else:
                         abort(404)
@@ -369,7 +379,7 @@ class Object(object):
         container
 
     @method
-        download()
+        download() use save_to() instead
         delete()
     """
 
@@ -492,21 +502,6 @@ class Object(object):
         """
         return "%s/%s" % (self.container.name, self.name)
 
-    def download(self, name=None, signed=True):
-        """
-        Trigger a browse download
-        :return:
-        """
-        if "local" in self.driver.name.lower():
-            return url_for(SERVER_ENDPOINT,
-                           object_name=self.path,
-                           dl=1,
-                           name=name)
-        else:
-            if signed:
-                pass
-            pass
-
     def save_to(self, destination, name=None, overwrite=False, delete_on_failure=True):
         """
         To save the object in a local path
@@ -527,3 +522,45 @@ class Object(object):
                                   overwrite_existing=overwrite,
                                   delete_on_failure=delete_on_failure)
         return obj_path if file else None
+
+    def download_url(self, timeout=60, name=None):
+        """
+        Trigger a browse download
+        :param timeout: int - Time in seconds to expire the download
+        :param name: str - for LOCAL only, to rename the file being downloaded
+        :return: str
+        """
+        if "local" in self.driver.name.lower():
+            return url_for(SERVER_ENDPOINT,
+                           object_name=self.name,
+                           dl=1,
+                           name=name,
+                           _external=True)
+        else:
+            driver_name = self.driver.name.lower()
+            expires = (datetime.datetime.now()
+                       + datetime.timedelta(seconds=timeout)).strftime("%s")
+
+            if 's3' in driver_name or 'google' in driver_name:
+
+                s2s = "GET\n\n\n{expires}\n/{object_name}"\
+                    .format(expires=expires, object_name=self.path)
+                h = hmac.new(self.driver.secret, s2s, hashlib.sha1)
+                s = base64.encodestring(h.digest()).strip()
+                _keyIdName = "AWSAccessKeyId" if "s3" in driver_name else "GoogleAccessId"
+                params = {
+                    _keyIdName: self.driver.key,
+                    "Expires": expires,
+                    "Signature": s
+                }
+                urlkv = urlencode(params)
+                return "%s?%s" % (self.secure_url, urlkv)
+
+            elif 'cloudfiles' in driver_name:
+                return self.driver.ex_get_object_temp_url(self._obj,
+                                                               method="GET",
+                                                               timeout=expires)
+            else:
+                raise NotImplemented("This provider '%s' doesn't support or "
+                                     "doesn't have a signed url "
+                                     "implemented yet" % self.provider_name)

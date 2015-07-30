@@ -1,5 +1,6 @@
-0.7.0
+0.10.0
     - Removed LOCAL_PATH configuration. Use CONTAINER as the LOCAL_PATH
+    - Change config prefix to STORAGE_*
 
 0.6.0
     - More pythonic

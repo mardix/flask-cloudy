@@ -1,0 +1,3 @@
+Hello World!
+
+from flask_cloud import Storage

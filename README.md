@@ -34,7 +34,7 @@ For local file storage, it also provides a flask endpoint to access the files.
     @app.route("/upload", methods=["POST", "GET"]):
     def upload():
         if request.method == "POST":
-        	file = request.file.get("file")
+        	file = request.files.get("file")
             my_upload = storage.upload(file)
             
             # some useful properties
@@ -185,7 +185,7 @@ Storage:
 
 The **Storage** class allows you to access, upload, get an object from the Storage. 
 
-##### Storage(provider, key=None, secret=None, container=None)
+##### Storage(provider, key=None, secret=None, container=None, allowed_extensions=None)
 
 - provider: the storage provider:
 
@@ -209,6 +209,8 @@ The **Storage** class allows you to access, upload, get an object from the Stora
      - For cloud storage, use the **BUCKET NAME** 
      
      - For LOCAL provider, it's the directory path where to access the files 
+     
+- allowed_extensions: List of extensions to upload to upload
 
 
 ##### Storage.init_app(app)
@@ -239,7 +241,7 @@ It will also setup a server endpoint when STORAGE_PROVIDER == LOCAL
     @app.route("/upload", methods=["POST", "GET"]):
     def upload():
         if request.method == "POST":
-        	file = request.file.get("file")
+        	file = request.files.get("file")
             my_upload = storage.upload(file)
             
             # some useful properties
@@ -452,11 +454,15 @@ To save the object to a local path
 	print(my_new_file) # Will print -> /my/new/path/my_object.txt
 
 
-##### Object.download(name=None)
+##### Object.download_url(timeout=60, name=None)
 
 Return a URL that triggers the browser download of the file. 
 
-Use the url to download the file
+- timeout: int - The time in seconds to give access to the url
+
+- name: str - for LOCAL only, to rename the file being downloaded
+
+.
 
 	storage = Storage(provider, key, secret, container)
 	my_object = storage.get("my_object.txt")
@@ -475,12 +481,12 @@ Use the url to download the file
             
 ---
 
----
+I hope you find this library useful, enjoy!
 
-Thank you 
 
 Mardix :) 
 
 ---
 
 License: MIT - Copyright 2015 Mardix
+

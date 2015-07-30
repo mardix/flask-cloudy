@@ -24,12 +24,6 @@ class App(object):
         STORAGE_ALLOWED_EXTENSIONS=[])
 
 
-def _setup_function():
-    pass
-
-def _teardown_function():
-    pass
-
 def test_get_file_extension():
     filename = "hello.jpg"
     assert get_file_extension(filename) == "jpg"
@@ -170,3 +164,6 @@ def test_save_to():
     file2 = o.save_to(CWD + "/data", name="my_new_file", overwrite=True)
     assert os.path.isfile(file)
     assert file2 == CWD + "/data/my_new_file.txt"
+
+
+from flask_cloudy import Storage

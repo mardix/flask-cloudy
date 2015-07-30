@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Flask-Cloudy</title>
+</head>
+<body>
+
+<h1>Flask-Cloudy</h1>
+
+
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+    Select image to upload:
+    <input type="file" name="file" id="fileToUpload"> <br>
+    <input type="submit" value="Upload File" name="submit">
+</form>
+
+<hr>
+
+<h3>List of files available on the storage:</h3>
+
+<table>
+    <thead>
+        <th>Name</th>
+        <th>Size</th>
+    </thead>
+    <tbody>
+        {% for obj in storage %}
+        <tr>
+            <td><a href="{{ url_for('view', object_name=obj.name) }}">{{ obj.name }}</a></td>
+            <td>{{ obj.size }} bytes</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+
+</body>
+</html>
