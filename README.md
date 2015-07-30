@@ -471,7 +471,7 @@ Return a URL that triggers the browser download of the file.
 
 	storage = Storage(provider, key, secret, container)
 	my_object = storage.get("my_object.txt")
-	download_url = my_object.download()	
+	download_url = my_object.download_url()	
 	
 	# or with flask
 
@@ -479,8 +479,8 @@ Return a URL that triggers the browser download of the file.
     def download(object_name):
         my_object = storage.get(object_name)
         if my_object:
-        	download_url = my_object.download()
-        	return download_url
+        	download_url = my_object.download_url()
+        	return redirect(download_url)
         else:	
         	abort(404, "File doesn't exist")
             
