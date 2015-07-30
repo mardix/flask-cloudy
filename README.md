@@ -61,6 +61,11 @@ For local file storage, it also provides a flask endpoint to access the files.
 
 ---        
        
+Go to the "example" directory to get a workable flask-cloud example
+
+
+--- 
+  
   
 ### Features:
 
