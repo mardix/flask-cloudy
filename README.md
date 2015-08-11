@@ -8,6 +8,9 @@ AWS S3, Google Storage, Microsoft Azure, Rackspace Cloudfiles, and even Local fi
 
 For local file storage, it also provides a flask endpoint to access the files.
  
+ 
+Version: 0.11.*
+
 ---
 
 ##TLDR; Quick Example
@@ -406,12 +409,17 @@ The extension of the object
 
 ##### Object.url
 
-Get the full url of the object
+Return the url of the object
 
+On LOCAL, it will return the url without the domain name ( ie: /files/my-file.jpg )
 
-##### Object.short_url 
+For cloud providers it will return the full url
 
-Specially for LOCAL provider, it will return the url without the domain.
+##### Object.full_url 
+
+Returns the full url of the object
+
+Specially for LOCAL provider, it will return the url with the domain.
 
 For cloud providers, it will return the full url just like **Object.url**
 
@@ -419,6 +427,7 @@ For cloud providers, it will return the full url just like **Object.url**
 ##### Object.secure_url 
 
 Return a secured url, with **https://** 
+
 
 ##### Object.path
 
@@ -461,7 +470,7 @@ To save the object to a local path
 
 ##### Object.download_url(timeout=60, name=None)
 
-Return a URL that triggers the browser download of the file. 
+Return a URL that triggers the browser download of the file. On cloud providers it will return a signed url.
 
 - timeout: int - The time in seconds to give access to the url
 

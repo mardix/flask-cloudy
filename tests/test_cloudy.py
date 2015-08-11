@@ -165,5 +165,3 @@ def test_save_to():
     assert os.path.isfile(file)
     assert file2 == CWD + "/data/my_new_file.txt"
 
-
-from flask_cloudy import Storage

@@ -1,3 +1,7 @@
+0.11.0
+    - Removed flask_cloudy.Object.short_url now use flask_cloudy.Object.url
+    - Added flask_cloudy.Object.full_url to have the domain for local storage
+
 0.10.0
     - Removed LOCAL_PATH configuration. Use CONTAINER as the LOCAL_PATH
     - Change config prefix to STORAGE_*

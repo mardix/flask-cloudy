@@ -448,24 +448,24 @@ class Object(object):
     def url(self):
         """
         Returns the url of the object.
-        For local it will return it with the domain name
-        :return:
-        """
-        return self.get_url(longurl=True)
-
-    @property
-    def short_url(self):
-        """
-        Returns the url of the object
-        For local it will return it WITHOUT the domain name
-        :return:
+        For Local it will return it without the domain name
+        :return: str
         """
         return self.get_url()
 
     @property
+    def full_url(self):
+        """
+        Returns the full url with the domain, specially for Local storage
+        :return: str
+        """
+        return self.get_url(longurl=True)
+
+
+    @property
     def secure_url(self):
         """
-        Return a url with https
+        Return the full url with https
         :return:
         """
         return self.get_url(secure=True, longurl=True)
@@ -564,3 +564,15 @@ class Object(object):
                 raise NotImplemented("This provider '%s' doesn't support or "
                                      "doesn't have a signed url "
                                      "implemented yet" % self.provider_name)
+
+    @property
+    def short_url(self):
+        """
+        DEPRECATED
+
+        Returns the url of the object
+        For local it will return it WITHOUT the domain name
+        :return:
+        """
+        warnings.warn("DEPRECATED: flask_cloudy.Object.short_url has been deprecated, use flask_cloudy.Object.url or flask_cloudy.Object.full_url")
+        return self.get_url()
