@@ -31,7 +31,7 @@ Version: 0.11.*
 	})
 	
 	# Setup storage
-	storage = new Storage()
+	storage = Storage()
 	storage.init_app(app) 
 	
     @app.route("/upload", methods=["POST", "GET"]):
