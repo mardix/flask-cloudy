@@ -149,8 +149,8 @@ def test_storage_upload_append_extension():
 def test_storage_upload_with_prefix():
     storage = app_storage()
     object_name = "my-txt-hello-hello"
-    prefix = "dir1/dir2/dir3"
-    full_name = "%s/%s.%s" % (prefix, object_name, "txt")
+    prefix = "dir1/dir2/dir3/"
+    full_name = "%s%s.%s" % (prefix, object_name, "txt")
     o = storage.upload(CWD + "/data/hello.txt", name=object_name, prefix=prefix, overwrite=True)
     assert full_name in storage
     assert o.name == full_name
@@ -160,7 +160,7 @@ def test_save_to():
     storage = app_storage()
     object_name = "my-txt-hello-to-save.txt"
     o = storage.upload(CWD + "/data/hello.txt", name=object_name)
-    file = o.save_to("./data", overwrite=True)
+    file = o.save_to(CWD + "/data", overwrite=True)
     file2 = o.save_to(CWD + "/data", name="my_new_file", overwrite=True)
     assert os.path.isfile(file)
     assert file2 == CWD + "/data/my_new_file.txt"

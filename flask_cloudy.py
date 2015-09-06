@@ -297,7 +297,7 @@ class Storage(object):
             name = secure_filename(name)
 
         if prefix:
-            name = prefix.strip("/") + "/" + name
+            name = prefix.lstrip("/") + name
 
         if not overwrite:
             name = self._safe_object_name(name)

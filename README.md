@@ -298,7 +298,8 @@ To save or upload a file in the container
 
 - name: to give the file a new name
 
-- prefix: a name to add in front of the file name. It can make it a directory
+- prefix: a name to add in front of the file name. Add a slash at the end of 
+prefix to make it a directory otherwise it will just append it to the name
 
 - allowed_extensions: list of extensions
 
@@ -324,20 +325,29 @@ To save or upload a file in the container
 The uploaded file will be named: **new_readme.md**
 	
 	
-**3) Put the uploaded file under a different location**
+**3) Put the uploaded file under a different location using `prefix`**
+	
 	
 	storage.upload(my_file, name="new_readme", prefix="my_dir/")
+
 	
 now the filename becomes **my_dir/new_readme.md**
 
 On LOCAL it will create the directory *my_dir* if it doesn't exist. 
 
 	
-**4a.) Public upload **
+	storage.upload(my_file, name="new_readme", prefix="my_new_path-")
+
+	
+now the filename becomes **my_new_path-new_readme.md**
+ 
+
+**4a.) Public upload**
 
 	storage.upload(my_file, public=True)
 	
-**4b.) Private upload **
+	
+**4b.) Private upload**
 
 	storage.upload(my_file, public=False)
 

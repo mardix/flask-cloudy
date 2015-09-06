@@ -30,3 +30,15 @@ docs/_build*
 .test_config
 
 .tox
+
+tests/*
+!tests/__init__.py
+!tests/config.py
+!tests/test_cloudy.py
+
+tests/data/*
+!tests/data/hello.txt
+!tests/data/hello.js
+
+tests/container_1/*
+!tests/container_1/empty
