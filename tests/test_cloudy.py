@@ -165,3 +165,19 @@ def test_save_to():
     assert os.path.isfile(file)
     assert file2 == CWD + "/data/my_new_file.txt"
 
+def test_werkzeug_upload():
+    try:
+        import werkzeug
+    except ImportError:
+        return
+    storage = app_storage()
+    object_name = "my-txt-hello.txt"
+    filepath = CWD + "/data/hello.txt"
+    file = None
+    with open(filepath, 'rb') as fp:
+        file = werkzeug.datastructures.FileStorage(fp)
+        file.filename = object_name
+        o = storage.upload(file, overwrite=True)
+        assert isinstance(o, Object)
+        assert o.name == object_name
+
