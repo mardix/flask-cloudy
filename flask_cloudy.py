@@ -347,7 +347,7 @@ class Storage(object):
                 @app.route(url, endpoint=SERVER_ENDPOINT)
                 def files_server(object_name):
                     obj = self.get(object_name)
-                    if obj:
+                    if obj is not None:
                         dl = request.args.get("dl")
                         name = request.args.get("name", obj.name)
 
