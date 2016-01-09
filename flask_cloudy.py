@@ -202,7 +202,7 @@ class Storage(object):
         secret = app.config.get("STORAGE_SECRET", None)
         container = app.config.get("STORAGE_CONTAINER", None)
         allowed_extensions = app.config.get("STORAGE_ALLOWED_EXTENSIONS", None)
-        serve_files = app.config.get("STORAGE_SERVER", False)
+        serve_files = app.config.get("STORAGE_SERVER", True)
         serve_files_url = app.config.get("STORAGE_SERVER_URL", "files")
 
         self.config["serve_files"] = serve_files
