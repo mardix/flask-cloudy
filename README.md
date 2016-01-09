@@ -9,7 +9,7 @@ AWS S3, Google Storage, Microsoft Azure, Rackspace Cloudfiles, and even Local fi
 For local file storage, it also provides a flask endpoint to access the files.
  
  
-Version: 0.11.*
+Version: 0.13.*
 
 ---
 
