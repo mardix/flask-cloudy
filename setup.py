@@ -39,7 +39,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "Flask==0.10.1",
-        "apache-libcloud==0.17.0",
+        "apache-libcloud==0.19.0",
         "lockfile==0.10.2",
         "shortuuid==0.1",
         "six==1.9.0",

@@ -308,7 +308,7 @@ class Storage(object):
             raise InvalidExtensionError("Invalid file extension: '.%s' " % extension)
 
         if isinstance(file, FileStorage):
-            obj = self.container.upload_object_via_stream(iterator=file,
+            obj = self.container.upload_object_via_stream(iterator=file.stream,
                                                           object_name=name,
                                                           extra=extra)
         else:
