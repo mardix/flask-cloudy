@@ -1,3 +1,8 @@
+0.13.0
+    - Upgrade apache-libcloud to 0.20.0
+    - Fixed object being False
+    - Thanks to https://github.com/alexa-infra for the contributions
+
 0.12.0
     - Fixed prefix in Storage.upload that assumed the prefix is a directory
         Add a slash / at the end of prefix  to make it a directory, or it will

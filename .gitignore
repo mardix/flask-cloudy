@@ -30,6 +30,7 @@ docs/_build*
 .test_config
 
 .tox
+.cache
 
 tests/*
 !tests/__init__.py
