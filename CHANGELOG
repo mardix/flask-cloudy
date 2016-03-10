@@ -1,6 +1,6 @@
 0.13.1
     - Set default storage to True
-    - Thanks to https://github.com/wassname for the contributions
+    - Thanks to https://github.com/wassname for the contributions]
 
 0.13.0
     - Upgrade apache-libcloud to 0.20.0

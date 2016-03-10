@@ -21,6 +21,7 @@ class App(object):
         STORAGE_KEY=config.KEY,
         STORAGE_SECRET=config.SECRET,
         STORAGE_CONTAINER=CONTAINER,
+        STORAGE_SERVER=False,
         STORAGE_ALLOWED_EXTENSIONS=[])
 
 
@@ -164,6 +165,15 @@ def test_save_to():
     file2 = o.save_to(CWD + "/data", name="my_new_file", overwrite=True)
     assert os.path.isfile(file)
     assert file2 == CWD + "/data/my_new_file.txt"
+
+def test_delete():
+    storage = app_storage()
+    object_name = "my-txt-hello-to-delete.txt"
+    o = storage.upload(CWD + "/data/hello.txt", name=object_name)
+
+    assert object_name in storage
+    o.delete()
+    assert object_name not in storage
 
 def test_werkzeug_upload():
     try:
