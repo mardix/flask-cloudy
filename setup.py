@@ -19,7 +19,7 @@ Supported storage:
 from setuptools import setup, find_packages
 
 __NAME__ = "Flask-Cloudy"
-__version__ = "0.13.1"
+__version__ = "0.13.2"
 __author__ = "Mardix"
 __license__ = "MIT"
 __copyright__ = "2015"
@@ -38,7 +38,7 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     install_requires=[
-        "Flask==0.10.1",
+        "Flask>=0.10.1",
         "apache-libcloud==0.20.0",
         "lockfile==0.10.2",
         "shortuuid==0.1",
