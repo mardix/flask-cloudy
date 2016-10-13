@@ -8,6 +8,8 @@ import base64
 import hmac
 import hashlib
 import warnings
+from contextlib import contextmanager
+import copy
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from importlib import import_module
@@ -19,7 +21,6 @@ from libcloud.storage.base import Object as BaseObject, StorageDriver
 from libcloud.storage.drivers import local
 from six.moves.urllib.parse import urlparse, urlunparse, urljoin, urlencode
 import slugify
-
 
 
 SERVER_ENDPOINT = "FLASK_CLOUDY_SERVER"
@@ -115,6 +116,7 @@ class Storage(object):
                          + EXTENSIONS["IMAGE"] \
                          + EXTENSIONS["AUDIO"] \
                          + EXTENSIONS["DATA"]
+    _kw = {}
 
     def __init__(self,
                  provider=None,
@@ -141,6 +143,17 @@ class Storage(object):
             self.init_app(app)
 
         if provider:
+            # Hold the params that were passed
+            self._kw = {
+                "provider": provider,
+                "key": key,
+                "secret": secret,
+                "container": container,
+                "allowed_extensions": allowed_extensions,
+                "app": app
+            }
+            self._kw.update(kwargs)
+
             if allowed_extensions:
                 self.allowed_extensions = allowed_extensions
 
@@ -223,6 +236,19 @@ class Storage(object):
                       allowed_extensions=allowed_extensions)
 
         self._register_file_server(app)
+
+    @contextmanager
+    def use(self, container):
+        """
+        A context manager to temporarily use a different container on the same driver
+        :param container: str - the name of the container (bucket or a dir name if local)
+        :yield: Storage
+        """
+        kw = self._kw.copy()
+        kw["container"] = container
+        s = Storage(**kw)
+        yield s
+        del s
 
     def get(self, object_name):
         """

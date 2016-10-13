@@ -1,3 +1,6 @@
+0.14.0
+    - Added the context manager 'use' to temporarily use a different container on the same driver
+
 0.13.2
     - Flask required version 0.10.1 +
 

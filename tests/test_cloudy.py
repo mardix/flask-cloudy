@@ -2,18 +2,19 @@ import os
 import pytest
 from libcloud.storage.base import (StorageDriver, Container)
 from flask_cloudy import (get_file_extension,
-                                get_file_extension_type,
-                                get_file_name,
-                                get_driver_class,
-                                get_provider_name,
-                                Storage,
-                                Object,
-                                InvalidExtensionError)
+                            get_file_extension_type,
+                            get_file_name,
+                            get_driver_class,
+                            get_provider_name,
+                            Storage,
+                            Object,
+                            InvalidExtensionError)
 from tests import config
 
 CWD = os.path.dirname(__file__)
 
 CONTAINER = "%s/%s" % (CWD, config.CONTAINER) if config.PROVIDER == "LOCAL" else config.CONTAINER
+CONTAINER2 = "%s/%s" % (CWD, config.CONTAINER2) if config.PROVIDER == "LOCAL" else config.CONTAINER2
 
 class App(object):
     config = dict(
@@ -170,10 +171,21 @@ def test_delete():
     storage = app_storage()
     object_name = "my-txt-hello-to-delete.txt"
     o = storage.upload(CWD + "/data/hello.txt", name=object_name)
-
     assert object_name in storage
     o.delete()
     assert object_name not in storage
+
+def test_use():
+    storage = app_storage()
+    object_name = "my-txt-hello-to-save-with-use.txt"
+    f = CWD + "/data/hello.txt"
+    with storage.use(CONTAINER2) as s2:
+        assert isinstance(s2.container, Container)
+        o = s2.upload(f, "hello.txt")
+        assert isinstance(o, Object)
+    o1 = storage.upload(f, name=object_name)
+    assert isinstance(o1, Object)
+    assert o1.name == object_name
 
 def test_werkzeug_upload():
     try:

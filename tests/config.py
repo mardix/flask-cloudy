@@ -8,3 +8,4 @@ CONTAINER = "yoredis.com"
 # FOR LOCAL
 PROVIDER = "LOCAL"
 CONTAINER = "container_1"
+CONTAINER2 = "container_2"

@@ -365,6 +365,19 @@ Explicitly create an object that may exist already. Usually, when paramameters (
 	url = new_object.url 
 	size = len(new_object)
 
+
+##### Storage.use(container)
+
+A context manager to temporarily use a different container on the same provider
+
+    storage = Storage(provider, key, secret, container)
+	
+    with storage.use(another_container_name) as s3:
+        s3.upload(newfile)
+
+In the example above, it will upload the `newfile` to the new container name
+
+
 *It's Pythonic!!!*
 
 ##### Iterate through all the objects in the container
