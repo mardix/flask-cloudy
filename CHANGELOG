@@ -1,3 +1,7 @@
+0.15
+    - Added Object.full_path to return the full path of the local storage object
+    - remove Object.short_url which was deprecated
+
 0.14.0
     - Added the context manager 'use' to temporarily use a different container on the same driver
 

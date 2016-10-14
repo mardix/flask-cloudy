@@ -528,6 +528,17 @@ class Object(object):
         """
         return "%s/%s" % (self.container.name, self.name)
 
+    @property
+    def full_path(self):
+        """
+        Return the full path of the local object
+        If not local, it will return self.path
+        :return: str
+        """
+        if "local" in self.driver.name.lower():
+            return "%s/%s" % self.container.key, self.path
+        return self.path
+
     def save_to(self, destination, name=None, overwrite=False, delete_on_failure=True):
         """
         To save the object in a local path
@@ -590,15 +601,3 @@ class Object(object):
                 raise NotImplemented("This provider '%s' doesn't support or "
                                      "doesn't have a signed url "
                                      "implemented yet" % self.provider_name)
-
-    @property
-    def short_url(self):
-        """
-        DEPRECATED
-
-        Returns the url of the object
-        For local it will return it WITHOUT the domain name
-        :return:
-        """
-        warnings.warn("DEPRECATED: flask_cloudy.Object.short_url has been deprecated, use flask_cloudy.Object.url or flask_cloudy.Object.full_url")
-        return self.get_url()

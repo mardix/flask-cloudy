@@ -9,7 +9,7 @@ AWS S3, Google Storage, Microsoft Azure, Rackspace Cloudfiles, and even Local fi
 For local file storage, it also provides a flask endpoint to access the files.
  
  
-Version: 0.14.*
+Version: 0.15.*
 
 ---
 
@@ -193,7 +193,7 @@ Storage:
 
 The **Storage** class allows you to access, upload, get an object from the Storage. 
 
-##### Storage(provider, key=None, secret=None, container=None, allowed_extensions=None)
+#### Storage(provider, key=None, secret=None, container=None, allowed_extensions=None)
 
 - provider: the storage provider:
 
@@ -221,7 +221,7 @@ The **Storage** class allows you to access, upload, get an object from the Stora
 - allowed_extensions: List of extensions to upload to upload
 
 
-##### Storage.init_app(app)
+#### Storage.init_app(app)
 
 To initiate the Storage via Flask config.
 
@@ -265,7 +265,7 @@ It will also setup a server endpoint when STORAGE_PROVIDER == LOCAL
 	
 
 
-##### Storage.get(object_name)
+#### Storage.get(object_name)
 
 Get an object in the storage by name, relative to the container.
 
@@ -290,7 +290,7 @@ Some valid object names, they can contains slashes to indicate it's a directory
 	
 	
 
-##### Storage.upload(file, name=None, prefix=None, allowed_extesion=[], overwrite=Flase, public=False)
+#### Storage.upload(file, name=None, prefix=None, allowed_extesion=[], overwrite=Flase, public=False)
 
 To save or upload a file in the container
 
@@ -352,7 +352,7 @@ now the filename becomes **my_new_path-new_readme.md**
 	storage.upload(my_file, public=False)
 
 
-##### Storage.create(object_name, size=0, hash=None, extra=None, metda_data=None)
+#### Storage.create(object_name, size=0, hash=None, extra=None, metda_data=None)
 
 Explicitly create an object that may exist already. Usually, when paramameters (name, size, hash, etc...) are already saved, let's say in the database, and you want Storage to manipulate the file. 
 
@@ -366,7 +366,7 @@ Explicitly create an object that may exist already. Usually, when paramameters (
 	size = len(new_object)
 
 
-##### Storage.use(container)
+#### Storage.use(container)
 
 A context manager to temporarily use a different container on the same provider
 
@@ -380,7 +380,7 @@ In the example above, it will upload the `newfile` to the new container name
 
 *It's Pythonic!!!*
 
-##### Iterate through all the objects in the container
+#### Iterate through all the objects in the container
 
 Each object is an instance on **flask_cloudy.Object**
 
@@ -388,12 +388,12 @@ Each object is an instance on **flask_cloudy.Object**
 	for obj in storage:
 		print(obj.name)
 
-##### Get the total objects in the container
+#### Get the total objects in the container
 
 	storage = Storage(provider, key, secret, container)
 	total_items = len(storage)
 
-##### Check to see if an object exists in the container
+#### Check to see if an object exists in the container
 
 	storage = Storage(provider, key, secret, container)
 	my_file = "hello.txt"
@@ -415,22 +415,22 @@ Usually, you will get a cloud object by accessing an object in the container.
 	
 Properties:
 	
-##### Object.name 
+#### Object.name 
 
 The name of the object
 
 
-##### Object.size
+#### Object.size
 
 The size in bytes of the object
 
 
-##### Object.extension
+#### Object.extension
 
 The extension of the object
 
 
-##### Object.url
+#### Object.url
 
 Return the url of the object
 
@@ -438,7 +438,7 @@ On LOCAL, it will return the url without the domain name ( ie: /files/my-file.jp
 
 For cloud providers it will return the full url
 
-##### Object.full_url 
+#### Object.full_url 
 
 Returns the full url of the object
 
@@ -447,29 +447,34 @@ Specially for LOCAL provider, it will return the url with the domain.
 For cloud providers, it will return the full url just like **Object.url**
 
 
-##### Object.secure_url 
+#### Object.secure_url 
 
 Return a secured url, with **https://** 
 
 
-##### Object.path
+#### Object.path
 
 The path of the object relative to the container
  
+#### Object.full_path
 
-##### Object.provider_name 
+For Local, it will show the full path of the object, otherwise it just returns
+the Object.path
+ 
+
+#### Object.provider_name 
 
 The provider name: ie: Local, S3,...
 
 
-##### Object.type 
+#### Object.type 
 
 The type of the object, ie: IMAGE, AUDIO, TEXT,... OTHER
 
 
 Methods:
 
-##### Object.save_to(destination, name=None, overwrite=False, delete_on_failure=True)
+#### Object.save_to(destination, name=None, overwrite=False, delete_on_failure=True)
 
 To save the object to a local path 
 
@@ -491,7 +496,7 @@ To save the object to a local path
 	print(my_new_file) # Will print -> /my/new/path/my_object.txt
 
 
-##### Object.download_url(timeout=60, name=None)
+#### Object.download_url(timeout=60, name=None)
 
 Return a URL that triggers the browser download of the file. On cloud providers it will return a signed url.
 
@@ -525,5 +530,5 @@ Mardix :)
 
 ---
 
-License: MIT - Copyright 2015 Mardix
+License: MIT - Copyright 2016 Mardix
 
