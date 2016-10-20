@@ -290,7 +290,7 @@ Some valid object names, they can contains slashes to indicate it's a directory
 	
 	
 
-#### Storage.upload(file, name=None, prefix=None, allowed_extesion=[], overwrite=Flase, public=False)
+#### Storage.upload(file, name=None, prefix=None, allowed_extension=[], overwrite=Flase, public=False)
 
 To save or upload a file in the container
 
