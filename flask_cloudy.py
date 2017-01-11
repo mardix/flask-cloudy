@@ -582,7 +582,7 @@ class Object(object):
 
                 s2s = "GET\n\n\n{expires}\n/{object_name}"\
                     .format(expires=expires, object_name=self.path)
-                h = hmac.new(self.driver.secret, s2s, hashlib.sha1)
+                h = hmac.new(self.driver.secret.encode('utf-8'), s2s.encode('utf-8'), hashlib.sha1)
                 s = base64.encodestring(h.digest()).strip()
                 _keyIdName = "AWSAccessKeyId" if "s3" in driver_name else "GoogleAccessId"
                 params = {
