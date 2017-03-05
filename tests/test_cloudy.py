@@ -139,7 +139,7 @@ def test_storage_upload():
 def test_storage_upload_use_filename_name():
     storage = app_storage()
     object_name = "hello.js"
-    o = storage.upload(CWD + "/data/hello.js", overwrite=True, allowed_extensions=["js"])
+    o = storage.upload(CWD + "/data/hello.js", overwrite=True, extensions=["js"])
     assert o.name == object_name
 
 def test_storage_upload_append_extension():
@@ -203,3 +203,23 @@ def test_werkzeug_upload():
         assert isinstance(o, Object)
         assert o.name == object_name
 
+
+def test_random():
+    storage = app_storage()
+    o = storage.upload(CWD + "/data/hello.js", overwrite=True, extensions=["js"], random_name=True)
+    assert len(o.name) == 32 + 3 # 3 extensions
+
+def test_upload_image_from_url():
+    storage = app_storage()
+    # Gooole logo: G
+    url = "https://yt3.ggpht.com/-v0soe-ievYE/AAAAAAAAAAI/AAAAAAAAAAA/OixOH_h84Po/s900-c-k-no-mo-rj-c0xffffff/photo.jpg"
+    o = storage.upload(url)
+    assert isinstance(o, Object)
+
+
+# def test_object_info():
+#     object_name = "hello.jpg"
+#     storage = app_storage()
+#     o = storage.create(object_name)
+#     assert isinstance(o.info, dict)
+#

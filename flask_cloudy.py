@@ -3,6 +3,7 @@ Flask-Cloudy
 """
 
 import os
+import re
 import datetime
 import base64
 import hmac
@@ -14,12 +15,14 @@ from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from importlib import import_module
 from flask import send_file, abort, url_for, request
-import shortuuid
+import uuid
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import DRIVERS, get_driver
 from libcloud.storage.base import Object as BaseObject, StorageDriver
 from libcloud.storage.drivers import local
 from six.moves.urllib.parse import urlparse, urlunparse, urljoin, urlencode
+from six.moves.urllib import request
+from six import string_types
 import slugify
 
 
@@ -41,6 +44,8 @@ ALL_EXTENSIONS = EXTENSIONS["TEXT"] \
                  + EXTENSIONS["AUDIO"] \
                  + EXTENSIONS["DATA"] \
                  + EXTENSIONS["ARCHIVE"]
+
+URL_REGEXP = re.compile(r'^(http|https|ftp|ftps)://')
 
 class InvalidExtensionError(Exception):
     pass
@@ -111,11 +116,17 @@ class Storage(object):
     container = None
     driver = None
     config = {}
-    allowed_extensions = EXTENSIONS["TEXT"] \
-                         + EXTENSIONS["DOCUMENT"] \
-                         + EXTENSIONS["IMAGE"] \
-                         + EXTENSIONS["AUDIO"] \
-                         + EXTENSIONS["DATA"]
+
+    TEXT = EXTENSIONS["TEXT"]
+    DOCUMENT = EXTENSIONS["DOCUMENT"]
+    IMAGE = EXTENSIONS["IMAGE"]
+    AUDIO = EXTENSIONS["AUDIO"]
+    DATA = EXTENSIONS["DATA"]
+    SCRIPT = EXTENSIONS["SCRIPT"]
+    ARCHIVE = EXTENSIONS["ARCHIVE"]
+
+    allowed_extensions = TEXT + DOCUMENT + IMAGE + AUDIO + DATA
+
     _kw = {}
 
     def __init__(self,
@@ -263,7 +274,6 @@ class Storage(object):
     def create(self, object_name, size=0, hash=None, extra=None, meta_data=None):
         """
         create a new object
-
         :param object_name:
         :param size:
         :param hash:
@@ -284,64 +294,98 @@ class Storage(object):
                file,
                name=None,
                prefix=None,
-               allowed_extensions=None,
+               extensions=None,
                overwrite=False,
                public=False,
+               random_name=False,
                **kwargs):
         """
         To upload file
         :param file: FileStorage object or string location
         :param name: The name of the object.
         :param prefix: A prefix for the object. Can be in the form of directory tree
-        :param allowed_extensions: list of extensions to allow
+        :param extensions: list of extensions to allow. If empty, it will use all extension.
         :param overwrite: bool - To overwrite if file exists
         :param public: bool - To set acl to private or public-read. Having acl in kwargs will override it
+        :param random_name - If True and Name is None it will create a random name.
+                Otherwise it will use the file name. `name` will always take precedence
         :param kwargs: extra params: ie: acl, meta_data etc.
         :return: Object
         """
-        if "acl" not in kwargs:
-            kwargs["acl"] = "public-read" if public else "private"
-        extra = kwargs
+        tmp_file = None
+        try:
+            if "acl" not in kwargs:
+                kwargs["acl"] = "public-read" if public else "private"
+            extra = kwargs
 
-        # coming from an upload object
-        if isinstance(file, FileStorage):
-            extension = get_file_extension(file.filename)
-            if not name:
-                fname = get_file_name(file.filename).split("." + extension)[0]
-                name = slugify.slugify(fname)
-        else:
-            extension = get_file_extension(file)
-            if not name:
-                name = get_file_name(file)
+            # It seems like this is a url, we'll try to download it first
+            if isinstance(file, string_types) and re.match(URL_REGEXP, file):
+                tmp_file = self._download_from_url(file)
+                file = tmp_file
 
-        if len(get_file_extension(name).strip()) == 0:
-            name += "." + extension
+            # Create a random name
+            if not name and random_name:
+                name = uuid.uuid4().hex
 
-        name = name.strip("/").strip()
+            # coming from a flask, or upload object
+            if isinstance(file, FileStorage):
+                extension = get_file_extension(file.filename)
+                if not name:
+                    fname = get_file_name(file.filename).split("." + extension)[0]
+                    name = slugify.slugify(fname)
+            else:
+                extension = get_file_extension(file)
+                if not name:
+                    name = get_file_name(file)
 
-        if isinstance(self.driver, local.LocalStorageDriver):
-            name = secure_filename(name)
+            if len(get_file_extension(name).strip()) == 0:
+                name += "." + extension
 
-        if prefix:
-            name = prefix.lstrip("/") + name
+            name = name.strip("/").strip()
 
-        if not overwrite:
-            name = self._safe_object_name(name)
+            if isinstance(self.driver, local.LocalStorageDriver):
+                name = secure_filename(name)
 
-        if not allowed_extensions:
-            allowed_extensions = self.allowed_extensions
-        if extension.lower() not in allowed_extensions:
-            raise InvalidExtensionError("Invalid file extension: '.%s' " % extension)
+            if prefix:
+                name = prefix.lstrip("/") + name
 
-        if isinstance(file, FileStorage):
-            obj = self.container.upload_object_via_stream(iterator=file.stream,
-                                                          object_name=name,
-                                                          extra=extra)
-        else:
-            obj = self.container.upload_object(file_path=file,
-                                               object_name=name,
-                                               extra=extra)
-        return Object(obj=obj)
+            if not overwrite:
+                name = self._safe_object_name(name)
+
+            # For backwards compatibility, kwargs now holds `allowed_extensions`
+            allowed_extensions = extensions or kwargs.get("allowed_extensions")
+            if not allowed_extensions:
+                allowed_extensions = self.allowed_extensions
+            if extension.lower() not in allowed_extensions:
+                raise InvalidExtensionError("Invalid file extension: '.%s' " % extension)
+
+            if isinstance(file, FileStorage):
+                obj = self.container.upload_object_via_stream(iterator=file.stream,
+                                                              object_name=name,
+                                                              extra=extra)
+            else:
+                obj = self.container.upload_object(file_path=file,
+                                                   object_name=name,
+                                                   extra=extra)
+            return Object(obj=obj)
+        except Exception as e:
+            raise e
+        finally:
+            if tmp_file and os.path.isfile(tmp_file):
+                os.remove(tmp_file)
+
+    def _download_from_url(self, url):
+        """
+        Download a url and return the tmp path
+        :param url:
+        :return:
+        """
+        ext = get_file_extension(url)
+        if "?" in url:
+            ext = get_file_extension(os.path.splitext(url.split("?")[0]))
+        filepath = "/tmp/%s.%s" % (uuid.uuid4().hex, ext)
+        request.urlretrieve(url, filepath)
+        return filepath
 
     def _safe_object_name(self, object_name):
         """ Add a UUID if to a object name if it exists. To prevent overwrites
@@ -351,8 +395,8 @@ class Storage(object):
         extension = get_file_extension(object_name)
         file_name = os.path.splitext(object_name)[0]
         while object_name in self:
-            uuid = shortuuid.uuid()
-            object_name = "%s__%s.%s" % (file_name, uuid, extension)
+            nuid = uuid.uuid4().hex
+            object_name = "%s__%s.%s" % (file_name, nuid, extension)
         return object_name
 
     def _register_file_server(self, app):
@@ -390,6 +434,7 @@ class Storage(object):
             else:
                 warnings.warn("Flask-Cloudy can't serve files. 'STORAGE_SERVER_FILES_URL' is not set")
 
+
 class Object(object):
     """
     The object file
@@ -420,6 +465,23 @@ class Object(object):
 
     def __len__(self):
         return self.size
+
+    @property
+    def info(self):
+        """
+        Return all the info of this object
+        :return: dict
+        """
+        return {
+            "name": self.name,
+            "size": self.size,
+            "extension": self.extension,
+            "url": self.url,
+            "full_url": self.full_url,
+            "type": self.type,
+            "path": self.path,
+            "provider_name": self.provider_name
+        }
 
     def get_url(self, secure=False, longurl=False):
         """

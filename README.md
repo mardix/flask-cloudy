@@ -9,7 +9,7 @@ AWS S3, Google Storage, Microsoft Azure, Rackspace Cloudfiles, and even Local fi
 For local file storage, it also provides a flask endpoint to access the files.
  
  
-Version: 0.16.*
+Version: 1.x.x
 
 ---
 
@@ -290,7 +290,7 @@ Some valid object names, they can contains slashes to indicate it's a directory
 	
 	
 
-#### Storage.upload(file, name=None, prefix=None, allowed_extension=[], overwrite=Flase, public=False)
+#### Storage.upload(file, name=None, prefix=None, extension=[], overwrite=Flase, public=False, random_name=False)
 
 To save or upload a file in the container
 
@@ -301,11 +301,13 @@ To save or upload a file in the container
 - prefix: a name to add in front of the file name. Add a slash at the end of 
 prefix to make it a directory otherwise it will just append it to the name
 
-- allowed_extensions: list of extensions
+- extensions: list of extensions
 
 - overwrite: If True it will overwrite existing files, otherwise it will add a uuid in the file name to make it unique
 
 - public: Bool - To set the **acl** to *public-read* when True, *private* when False
+
+- random_name: Bool - To randomly create a unique name if `name` is None
 
 .
 
@@ -313,19 +315,19 @@ prefix to make it a directory otherwise it will just append it to the name
 	my_file = "my_dir/readme.md"
 	
 		
-**1) This example will upload the file, an assign the object the name of the file**
+**1) Upload file + file name is the name of the uploaded file **
 	
 	storage.upload(my_file)	
 	
 	
-**2) This example will upload the file, an assign the object the name of the file**
+**2) Upload file + file name is now `new_readme`. It will will keep the extension of the original file**
 	
 	storage.upload(my_file, name="new_readme")
 	
 The uploaded file will be named: **new_readme.md**
 	
 	
-**3) Put the uploaded file under a different location using `prefix`**
+**3) Upload file to a different path using `prefix`**
 	
 	
 	storage.upload(my_file, name="new_readme", prefix="my_dir/")
@@ -340,6 +342,8 @@ On LOCAL it will create the directory *my_dir* if it doesn't exist.
 
 	
 now the filename becomes **my_new_path-new_readme.md**
+
+ATTENTION: If you want the file to be place in a subdirectory, `prefix` must have the trailing slash
  
 
 **4a.) Public upload**
@@ -350,6 +354,18 @@ now the filename becomes **my_new_path-new_readme.md**
 **4b.) Private upload**
 
 	storage.upload(my_file, public=False)
+
+**5) Upload + random name**
+
+    storage.upload(my_file, random_name=True)
+    
+ **6) Upload with external url***
+ 
+ You can upload an item from the internet directly to your storage 
+ 
+    storage.upload("http://the.site.path.com/abc.png")
+    
+It will save the image to your storage
 
 
 #### Storage.create(object_name, size=0, hash=None, extra=None, metda_data=None)
@@ -472,6 +488,10 @@ The provider name: ie: Local, S3,...
 The type of the object, ie: IMAGE, AUDIO, TEXT,... OTHER
 
 
+#### Object.info
+
+Returns a dict of the object name, extension, url, etc. This can be saved in a DB
+
 Methods:
 
 #### Object.save_to(destination, name=None, overwrite=False, delete_on_failure=True)
@@ -530,5 +550,5 @@ Mardix :)
 
 ---
 
-License: MIT - Copyright 2016 Mardix
+License: MIT - Copyright 2017 Mardix
 

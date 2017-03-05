@@ -1,3 +1,11 @@
+1.0.0
+    - Storage.upload now accepts a url, that will first download the file on local then upload it to storage
+    - Added args random_name(bool) in Storage.upload. If True and Name is None, it will create a uuid4 name.
+      `name` always takes precedence
+    - Added Object.info which returns a dict of the data. Which can be saved in a database
+    - Removed shortuuid in favor of uuid4
+    - (backwards compatible) rename 'allowed_extensions' to `extensions`,
+        but will still try to fall back to allowed extensions if None
 0.15
     - Added Object.full_path to return the full path of the local storage object
     - remove Object.short_url which was deprecated
