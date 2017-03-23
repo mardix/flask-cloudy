@@ -14,7 +14,8 @@ import copy
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from importlib import import_module
-from flask import send_file, abort, url_for, request
+from flask import send_file, abort, url_for
+from flask import request as flask_request
 import uuid
 from libcloud.storage.types import Provider, ObjectDoesNotExistError
 from libcloud.storage.providers import DRIVERS, get_driver
@@ -418,8 +419,8 @@ class Storage(object):
                 def files_server(object_name):
                     obj = self.get(object_name)
                     if obj is not None:
-                        dl = request.args.get("dl")
-                        name = request.args.get("name", obj.name)
+                        dl = flask_request.args.get("dl")
+                        name = flask_request.args.get("name", obj.name)
 
                         if get_file_extension(name) != obj.extension:
                             name += ".%s" % obj.extension
