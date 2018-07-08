@@ -13,8 +13,8 @@ Version: 1.x.x
 
 ---
 
-##TLDR; Quick Example
-
+## TLDR: Quick Example
+```py
 	from flask import Flask, request
 	from flask_cloudy import Storage
 	
@@ -61,7 +61,7 @@ Version: 1.x.x
         	return download_url
         else:	
         	abort(404, "File doesn't exist")
-
+```
 ---        
        
 Go to the "example" directory to get a workable flask-cloud example
@@ -227,6 +227,8 @@ To initiate the Storage via Flask config.
 
 It will also setup a server endpoint when STORAGE_PROVIDER == LOCAL
 
+```py
+
 	from flask import Flask, request
 	from flask_cloudy import Storage
 	
@@ -262,7 +264,7 @@ It will also setup a server endpoint when STORAGE_PROVIDER == LOCAL
         
     # Pretending the file uploaded is "my-picture.jpg"    
 	# it will return a url in the format: http://domain.com/files/my-picture.jpg
-	
+```	
 
 
 #### Storage.get(object_name)
@@ -283,11 +285,11 @@ Some valid object names, they can contains slashes to indicate it's a directory
     - my_dir/sub_dir/file.txt
 
 .
-
+```py
 	storage = Storage(provider, key, secret, container)
 	object_name = "hello.txt"
 	my_object = storage.get(object_name)
-	
+```	
 	
 
 #### Storage.upload(file, name=None, prefix=None, extension=[], overwrite=Flase, public=False, random_name=False)
@@ -310,36 +312,36 @@ prefix to make it a directory otherwise it will just append it to the name
 - random_name: Bool - To randomly create a unique name if `name` is None
 
 .
-
+```py
 	storage = Storage(provider, key, secret, container)
 	my_file = "my_dir/readme.md"
-	
+```	
 		
 **1) Upload file + file name is the name of the uploaded file **
-	
+```py	
 	storage.upload(my_file)	
-	
+```	
 	
 **2) Upload file + file name is now `new_readme`. It will will keep the extension of the original file**
-	
+```py	
 	storage.upload(my_file, name="new_readme")
-	
+```	
 The uploaded file will be named: **new_readme.md**
 	
 	
 **3) Upload file to a different path using `prefix`**
 	
-	
+```py	
 	storage.upload(my_file, name="new_readme", prefix="my_dir/")
-
+```
 	
 now the filename becomes **my_dir/new_readme.md**
 
 On LOCAL it will create the directory *my_dir* if it doesn't exist. 
 
-	
+```py	
 	storage.upload(my_file, name="new_readme", prefix="my_new_path-")
-
+```
 	
 now the filename becomes **my_new_path-new_readme.md**
 
@@ -347,31 +349,31 @@ ATTENTION: If you want the file to be place in a subdirectory, `prefix` must hav
  
 
 **4a.) Public upload**
-
+```py
 	storage.upload(my_file, public=True)
-	
+```	
 	
 **4b.) Private upload**
-
+```py
 	storage.upload(my_file, public=False)
-
+```
 **5) Upload + random name**
-
+```py
     storage.upload(my_file, random_name=True)
-    
+```    
  **6) Upload with external url***
  
  You can upload an item from the internet directly to your storage 
- 
+ ```py
     storage.upload("http://the.site.path.com/abc.png")
-    
+```    
 It will save the image to your storage
 
 
 #### Storage.create(object_name, size=0, hash=None, extra=None, metda_data=None)
 
 Explicitly create an object that may exist already. Usually, when paramameters (name, size, hash, etc...) are already saved, let's say in the database, and you want Storage to manipulate the file. 
-
+```py
 	storage = Storage(provider, key, secret, container)
 	existing_name = "holla.txt"
 	existing_size = "8000" # in bytes
@@ -380,17 +382,17 @@ Explicitly create an object that may exist already. Usually, when paramameters (
 	# Now I can do
 	url = new_object.url 
 	size = len(new_object)
-
+```
 
 #### Storage.use(container)
 
 A context manager to temporarily use a different container on the same provider
-
+```
     storage = Storage(provider, key, secret, container)
 	
     with storage.use(another_container_name) as s3:
         s3.upload(newfile)
-
+```
 In the example above, it will upload the `newfile` to the new container name
 
 
@@ -399,24 +401,24 @@ In the example above, it will upload the `newfile` to the new container name
 #### Iterate through all the objects in the container
 
 Each object is an instance on **flask_cloudy.Object**
-
+```py
 	storage = Storage(provider, key, secret, container)
 	for obj in storage:
 		print(obj.name)
-
+```
 #### Get the total objects in the container
-
+```py
 	storage = Storage(provider, key, secret, container)
 	total_items = len(storage)
-
+```
 #### Check to see if an object exists in the container
-
+```py
 	storage = Storage(provider, key, secret, container)
 	my_file = "hello.txt"
 	
 	if my_file in storage:
 		print("File is in the storage")
-
+```
 ---
 
 
@@ -425,10 +427,10 @@ Each object is an instance on **flask_cloudy.Object**
 The class **Object** is an entity of an object in the container.
 
 Usually, you will get a cloud object by accessing an object in the container.
-
+```py
 	storage = Storage(provider, key, secret, container)
 	my_object = storage.get("my_object.txt")
-	
+```	
 Properties:
 	
 #### Object.name 
@@ -507,14 +509,14 @@ To save the object to a local path
 - delete_on_failure: bool - To delete the file it fails to save
 
 .
-
+```py
 	storage = Storage(provider, key, secret, container)
 	my_object = storage.get("my_object.txt")
 	my_new_path = "/my/new/path"
 	my_new_file = my_object.save_to(my_new_path)
 	
 	print(my_new_file) # Will print -> /my/new/path/my_object.txt
-
+```
 
 #### Object.download_url(timeout=60, name=None)
 
@@ -525,7 +527,7 @@ Return a URL that triggers the browser download of the file. On cloud providers 
 - name: str - for LOCAL only, to rename the file being downloaded
 
 .
-
+```py
 	storage = Storage(provider, key, secret, container)
 	my_object = storage.get("my_object.txt")
 	download_url = my_object.download_url()	
@@ -540,7 +542,8 @@ Return a URL that triggers the browser download of the file. On cloud providers 
         	return redirect(download_url)
         else:	
         	abort(404, "File doesn't exist")
-            
+``` 
+
 ---
 
 I hope you find this library useful, enjoy!
