@@ -1,3 +1,5 @@
+1.1.0
+    - fixed dependencies
 1.0.0
     - Storage.upload now accepts a url, that will first download the file on local then upload it to storage
     - Added args random_name(bool) in Storage.upload. If True and Name is None, it will create a uuid4 name.

@@ -34,7 +34,7 @@ Version: 1.x.x
 	storage = Storage()
 	storage.init_app(app) 
 	
-    @app.route("/upload", methods=["POST", "GET"]):
+    @app.route("/upload", methods=["POST", "GET"])
     def upload():
         if request.method == "POST":
         	file = request.files.get("file")
@@ -53,7 +53,7 @@ Version: 1.x.x
 
 
 	# A download endpoint, to download the file
-    @app.route("/download/<path:object_name>"):
+    @app.route("/download/<path:object_name>")
     def download(object_name):
         my_object = storage.get(object_name)
         if my_object:

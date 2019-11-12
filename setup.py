@@ -19,7 +19,7 @@ Supported storage:
 from setuptools import setup, find_packages
 
 __NAME__ = "Flask-Cloudy"
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 __author__ = "Mardix"
 __license__ = "MIT"
 __copyright__ = "2017"
@@ -38,11 +38,11 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     install_requires=[
-        "Flask>=0.10.1",
-        "apache-libcloud>=0.20.1",
-        "lockfile>=0.10.2",
-        "six>=1.9.0",
-        'python-slugify>=1.2.1'
+        "Flask",
+        "apache-libcloud",
+        "lockfile",
+        "six",
+        'python-slugify'
     ],
 
     keywords=["flask", "s3", "aws", "cloudfiles", "storage", "azure", "google", "cloudy"],
